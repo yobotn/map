@@ -1,0 +1,190 @@
+<html>
+
+<head>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+    <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+    <style>
+        .map {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+
+</head>
+
+<body style='border:0; margin: 0'>
+    <div id="map" class="map"></div>
+</body>
+
+
+<script>
+    const startIcon = L.icon({
+        iconUrl: './assets/marker-blue.png',
+        iconSize: [30, 30], // size of the icon
+        // shadowSize:   [50, 64], // size of the shadow
+        // iconAnchor:   [22, 94], // point of the icon which will correspond to marker's location
+        // shadowAnchor: [4, 62],  // the same for the shadow
+        // popupAnchor:  [-3, -76] // point from which the popup should open relative to the iconAnchor
+    });
+
+    const endIcon = L.icon({
+        iconUrl: './assets/end-point.svg',
+        iconSize: [30, 30]
+    });
+
+    const currentIcon = L.icon({
+        iconUrl: './assets/red-marker.gif',
+        iconSize: [30, 30]
+    });
+
+
+    // Creating map options
+    var mapOptions = {
+        center: [31.8282, 34.6445],
+        zoom: 2
+    }
+
+    // Creating a map object
+    var map = new L.map('map', mapOptions);
+
+    // Creating a Layer object
+    var layer = new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        'attribution': 'Map data © <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
+    })
+
+    // Adding layer to the map
+    map.addLayer(layer);
+
+
+    const locations = [{
+            "id": 1,
+            "name": "Long Beach",
+            "state": "California",
+            "country": "United States",
+            "country_code": "US",
+            "locode": "USLGB",
+            "lat": 33.76696,
+            "lng": -118.18923
+        },
+        {
+            "id": 2,
+            "name": "Haiphong",
+            "state": "Thanh Pho Hai Phong",
+            "country": "Vietnam",
+            "country_code": "VN",
+            "locode": "VNHPH",
+            "lat": 20.86481,
+            "lng": 106.68345
+        },
+        {
+            "id": 3,
+            "name": "Yantian",
+            "state": "Guangdong Sheng",
+            "country": "China",
+            "country_code": "CN",
+            "locode": "CNYTN",
+            "lat": 22.58333,
+            "lng": 114.26667
+        },
+        {
+            "id": 4,
+            "name": "Hong Kong",
+            "state": "Central and Western District",
+            "country": "Hong Kong",
+            "country_code": "HK",
+            "locode": "HKHKG",
+            "lat": 22.27832,
+            "lng": 114.17469
+        }
+    ]
+
+
+
+    var latlngs = Array();
+
+
+    locations.forEach((itm, index) => {
+
+        latlngs.push([itm.lat, itm.lng])
+
+        if (index != locations.length - 1) {
+            var Icon = startIcon
+        }
+
+        if (index == locations.length - 1) {
+            var Icon = endIcon
+        }
+
+
+        let mark = L.marker([itm.lat, itm.lng], {
+            title: itm.name,
+            icon: Icon
+        })
+
+        mark.bindPopup(itm.name, {
+            closeOnClick: true,
+            autoClose: false
+        })
+        mark.addTo(map)
+
+        if (index == 0 || index == locations.length - 1) {
+            mark.openPopup()
+        }
+
+    });
+
+
+    //From documentation http://leafletjs.com/reference.html#polyline
+    // create polyline from an arrays of LatLng points
+    var polyline = L.polyline(latlngs, {
+        color: 'blue',
+        weight: 3,
+        opacity: 0.5,
+        smoothFactor: 1
+    }).addTo(map);
+
+    // zoom the map to the polyline
+    map.fitBounds(polyline.getBounds());
+
+
+
+
+
+
+    ;
+    (async () => {
+
+        const start = latlngs[0]
+        const end = latlngs[locations.length - 1]
+
+        const req = await fetch('./World_Continents.geojson')
+        const obstacles = await req.json()
+
+        var all_land = L.geoJson(obstacles).addTo(map);
+
+
+
+
+
+        const options = {
+            obstacles: all_land
+        };
+
+        const path = turf.shortestPath(start, end, options);
+
+        const line = L.polyline(path['geometry']['coordinates'], {color: 'blue'}).addTo(map);
+
+        console.log(line)
+
+    })()
+    
+</script>
+
+</html>
